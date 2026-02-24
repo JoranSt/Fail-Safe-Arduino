@@ -1,1 +1,2 @@
-# Fail-Safe-Arduino
+# Arduino Failsafe Shutdown System
+I'm developing a fail-safe Arduino system that monitors multiple sensors and controls an actuator (fan) based on state logic and interlocks. Each sensor will have an LED indicator, and a system-wide LED signals any fault. The project demonstrates (once finished) fail-safe design, modular control logic, and safety-first principles in embedded systems. Right now im focusing on adding more sensors and integrating everything together. Im planning on logging all the readings and making a model in python to simulate the logic. Flowcharts and diagrams will be added later.
