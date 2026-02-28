@@ -87,7 +87,7 @@ void setup() {
 void loop() {
   buttonState = digitalRead(buttonApin);
   if (!safeToStart && readyToArm && State == ARMING) {
-    updateBlinkingAnimation(0, greenbase);
+    updateBlinkingAnimation(0, 255);
     handleArmingButton();
 
   } else if (timePassed(startTime, 5000) && !readyToArm && !safeToStart) {
