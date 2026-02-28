@@ -18,6 +18,7 @@ enum SystemState {
   ERROR
 };
 SystemState State = ARMING;
+SystemState lastState = State;
 enum Warning : uint8_t { WARN_NONE = 0,
                          WARN_ULTRASONIC = 1 << 0  // 00000001
 
@@ -97,7 +98,8 @@ void loop() {
   if (millis() - readSensor >= 50) {
     readAllSensors();
     handleAllSensors();
-    checkWarnings();
+    updateSystemState();
+    updateLCD();
     readSensor = millis();
   }
   handleToggleButton();
@@ -110,19 +112,37 @@ void readAllSensors() {
 void handleAllSensors() {
   handleUltrasonic(distance);
 }
-void checkWarnings() {
-  if (warnings == WARN_NONE && State != ARMING) {
-    lcd.setCursor(0, 1);
-    lcd.print("                ");
-    return;
-  } else if (warnings != WARN_NONE && State == ARMING) {
-    displayMessage("System unsafe", 0, 0);
-  }
-  if (warnings & WARN_ULTRASONIC) {
-    displayMessage("! too close", 0, 1);
+void updateSystemState() {
+  if (errors != ERROR_NONE) {
+    State = ERROR;
+  } else if (warnings != WARN_NONE) {
+    State = WARNING;
+  } else if (safeToStart && ledState == HIGH) {
+    State = RUNNING;
+  } else if (safeToStart && ledState == LOW) {
+    State = IDLE;
+  } else {
+    State = ARMING;
   }
 }
-
+void updateLCD() {
+  if (State == lastState) return;
+  lastState = State;
+  lcd.clear();
+  switch (State) {
+    case ERROR: displayMessage("ERROR!",0,0); break;
+    case WARNING:
+      displayMessage("Warning:", 0 ,0 );
+      showWarningMessages();
+      break;
+    case IDLE: displayMessage("System idle"); break;
+    case RUNNING: displayMessage("System running", 0, 0); break;
+    case ARMING:
+      displayMessage("Arm System &", 0, 0);
+      displayMessage("Check safety", 0, 1);
+      break;
+  }
+}
 void handleToggleButton() {
   if (buttonState == HIGH) {
     isPressed = false;
@@ -176,8 +196,6 @@ void checkIdle() {
     safeToStart = false;
     ledState = HIGH;
     State = ARMING;
-    displayMessage("Check system &", 0, 0);
-    displayMessage("Arm it if safe", 0, 1);
   }
 }
 
@@ -194,13 +212,9 @@ void handleSystemStateChange(int buttonState) {
   if (buttonState == LOW) {
     State = IDLE;
     timeSystemOff = millis();
-    lcd.clear();
-    displayMessage("System idle", 0, 0);
   } else {
     State = RUNNING;
     timeSystemOn = millis();
-    lcd.clear();
-    displayMessage("System Running", 0, 0);
   }
 }
 
@@ -215,7 +229,9 @@ void fadefactor() {
   }
 }
 
-
+void showWarningMessages() {
+  if (warnings & WARN_ULTRASONIC) { displayMessage("Ultrasonic",0,1); }
+}
 void displayMessage(String message, int col, int row) {
   lcd.setCursor(col, row);
   lcd.print(message);
