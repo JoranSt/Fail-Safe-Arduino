@@ -86,8 +86,8 @@ void setup() {
 
 void loop() {
   buttonState = digitalRead(buttonApin);
-  if (!safeToStart && readyToArm) {
-    updateArmingAnimation();
+  if (!safeToStart && readyToArm && State == ARMING) {
+    updateBlinkingAnimation(0, greenbase);
     handleArmingButton();
 
   } else if (timePassed(startTime, 5000) && !readyToArm && !safeToStart) {
@@ -95,7 +95,7 @@ void loop() {
     displayMessage("Ready to arm", 0, 0);
     readyToArm = true;
   }
-  if (millis() - readSensor >= 50) {
+  if (millis() - readSensor >= 10) {
     readAllSensors();
     handleAllSensors();
     updateSystemState();
@@ -115,8 +115,11 @@ void handleAllSensors() {
 void updateSystemState() {
   if (errors != ERROR_NONE) {
     State = ERROR;
+    safeToStart = false;
+    updateBlinkingAnimation(redbase, 0);
   } else if (warnings != WARN_NONE) {
     State = WARNING;
+    updateBlinkingAnimation(redbase, greenbase);
   } else if (safeToStart && ledState == HIGH) {
     State = RUNNING;
   } else if (safeToStart && ledState == LOW) {
@@ -127,15 +130,20 @@ void updateSystemState() {
 }
 void updateLCD() {
   if (State == lastState) return;
-  lastState = State;
+
   lcd.clear();
+
+  lastState = State;
   switch (State) {
-    case ERROR: displayMessage("ERROR!",0,0); break;
+    case ERROR:
+      displayMessage("ERROR!", 0, 0);
+      displayMessage("Shutting down!", 0, 1);
+      break;
     case WARNING:
-      displayMessage("Warning:", 0 ,0 );
+      displayMessage("Warning:", 0, 0);
       showWarningMessages();
       break;
-    case IDLE: displayMessage("System idle"); break;
+    case IDLE: displayMessage("System idle", 0, 0); break;
     case RUNNING: displayMessage("System running", 0, 0); break;
     case ARMING:
       displayMessage("Arm System &", 0, 0);
@@ -153,11 +161,11 @@ void handleToggleButton() {
     lastMillisButton = millis();
   }
 }
-void updateArmingAnimation() {
+void updateBlinkingAnimation(int red, int green) {
   if (timePassed(lastMillisLed, 10)) {
     lastMillisLed = millis();
-    redbrightness = redbase * fadeFactor;
-    greenbrightness = greenbase * fadeFactor;
+    redbrightness = red * fadeFactor;
+    greenbrightness = green * fadeFactor;
     analogWrite(ledPinRed, redbrightness);
     analogWrite(ledPinGreen, greenbrightness);
     fadeFactor += (isFading == false) ? 0.01 : -0.01;
@@ -230,7 +238,7 @@ void fadefactor() {
 }
 
 void showWarningMessages() {
-  if (warnings & WARN_ULTRASONIC) { displayMessage("Ultrasonic",0,1); }
+  if (warnings & WARN_ULTRASONIC) { displayMessage("Ultrasonic", 0, 1); }
 }
 void displayMessage(String message, int col, int row) {
   lcd.setCursor(col, row);
