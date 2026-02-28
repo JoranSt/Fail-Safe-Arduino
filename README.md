@@ -4,12 +4,13 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 
 ## What I learned (so far)
 ---
-- I learned about enums and how to use them to represant a system state e.g Safe, Warning, Unsafe
-- I learned about bitflags to save memory and have 1 variable for all the warnings using binary (bitflags)
-- Learned to structure the program modulary by splitting up logic in functions after loop function became too complex
+- I learned how important it is to write memory efficient code when using microcontrollers.
+- I learned about enums and how to use them to represent a system state e.g Safe, Warning, Unsafe
+- I learned about bit‑flags, which save memory and let me store multiple warning conditions in a single variable using binary
+- I Learned to structure the program modularly by splitting up logic in functions after the loop function became too complex
 - I learned the basics of fail‑safe behavior and how to make the system react safely when something goes wrong.
-- Learned why naming things logically is important for readibility and maintenance
-- Designing a system with future proof in mind. (Using bitflags and enums even tho there werent that many variables. Good for if the system ever get expanded)
+- I learned why naming things logically is important for readability and maintenance
+- I learned how to design a system with future proof in mind. (Using bitflags and enums even though there werent that many variables. Good for if the system ever get expanded)
 ---
 ## What I can do better (so far)
 - I can group the logic even more, it will make the code easier to read and follow. It will also make the code more clean.
