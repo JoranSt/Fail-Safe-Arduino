@@ -1,9 +1,14 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
 //Variables for time
 unsigned long lastMillisLed;
 unsigned long lastMillisButton;
 unsigned long timeButtonPressed;
 unsigned long timeSystemOff;
 unsigned long timeSystemOn;
+unsigned long lcdLastScroll;
+unsigned long startTime;
 
 //Pin numbers
 int ledPinRed = 5;
@@ -27,14 +32,26 @@ bool safeToStart = false;
 bool isFading = true;
 bool isPressed = false;
 bool idle = false;
+bool startingMessageGone = false;
+bool armMessage = false;
+
+//Variables for LCD
+String startingMessage = "System powered";
+int lengthOfStartingMessage = startingMessage.length();
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void setup() {
   Serial.begin(9600);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print(startingMessage);
   pinMode(ledPinRed, OUTPUT);
   pinMode(ledPinGreen, OUTPUT);
   pinMode(buttonApin, INPUT_PULLUP);
   analogWrite(ledPinRed, redbrightness);
   analogWrite(ledPinGreen, greenbrightness);
+  startTime = millis();
 }
 
 void fadefactor() {
@@ -49,7 +66,7 @@ void fadefactor() {
 }
 void blinkingLed() {
   //makes the led blink every 10 ms
-  if (millis() - lastMillisLed > 10) {
+  if (timePassed(lastMillisLed, 10)) {
     lastMillisLed = millis();
     redbrightness = redbase * fadeFactor;
     greenbrightness = greenbase * fadeFactor;
@@ -57,6 +74,14 @@ void blinkingLed() {
     analogWrite(ledPinGreen, greenbrightness);
     fadeFactor += (isFading == false) ? 0.01 : -0.01;
   }
+}
+void scrollLeft() {
+  lcd.scrollDisplayLeft();
+  lcdLastScroll = millis();
+}
+void displayMessage(String message, int col, int row) {
+  lcd.setCursor(col, row);
+  lcd.print(message);
 }
 void toggleSystem() {
   //switches the led state
@@ -70,19 +95,23 @@ void handleSystemStateChange(int state) {
   if (state == LOW) {
     idle = true;
     timeSystemOff = millis();
+    lcd.clear();
+    displayMessage("System idle", 0, 0);
   } else {
     idle = false;
     timeSystemOn = millis();
+    lcd.clear();
+    displayMessage("System Running", 0, 0);
   }
 }
-bool timePassed(unsigned long startTime, unsigned long interval) {
-  return millis() - startTime >= interval;
-}
+  bool timePassed(unsigned long startTime, unsigned long interval) {
+    return millis() - startTime >= interval;
+  }
 
 void loop() {
   buttonState = digitalRead(buttonApin);
 
-  if (safeToStart == false) {
+  if (safeToStart == false && armMessage) {
     blinkingLed();
     fadefactor();
     //detects when you start holding the button
@@ -96,6 +125,11 @@ void loop() {
       toggleSystem();
     }
   }
+  else if (timePassed(startTime, 5000) && !armMessage && !safeToStart) {
+      lcd.clear();
+      displayMessage("Ready to arm", 0, 0);
+      armMessage = true;
+    }
 
   if (buttonState == HIGH) {
     isPressed = false;
@@ -112,6 +146,6 @@ void loop() {
     safeToStart = false;
   }
   lastButtonState = buttonState;
-  Serial.print("ledState: ");
-  Serial.println(ledState);
+  Serial.println(lengthOfStartingMessage);
+  Serial.print(startingMessageGone);
 }
