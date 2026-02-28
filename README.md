@@ -5,6 +5,7 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 ## What I learned (so far)
 ---
 - I learned how important it is to write memory efficient code when using microcontrollers.
+- I learned that blocking code (like long loops or delay()) should be avoided, because it caused the system to lag heavily
 - I learned about enums and how to use them to represent a system state e.g Safe, Warning, Unsafe
 - I learned about bit‑flags, which save memory and let me store multiple warning conditions in a single variable using binary
 - I Learned to structure the program modularly by splitting up logic in functions after the loop function became too complex
@@ -15,6 +16,7 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 ## What I can do better (so far)
 - I can group the logic even more, it will make the code easier to read and follow. It will also make the code more clean.
 - I can structure the system from the start moduraly. That will safe headaches later when I need to refactor everything into modular logic.
+- I can do better cable management on the breadboard. this will make things easier to see if something needs troubleshooting, to be added or to be changed. 
 ---
 ## How it works
 ## Future improvements
