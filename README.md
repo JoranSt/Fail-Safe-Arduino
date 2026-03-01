@@ -20,6 +20,7 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 ---
 ## How it works
 ## Future improvements
+- Adding a relay that detects when the system freezes and shuts down the actuator. (I dont have the hardware for it)
 ## Limitations
 ## How to run
 (Digital diagram of how the arduino is wired)
