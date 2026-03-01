@@ -21,6 +21,7 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 ## How it works
 ## Future improvements
 - Adding a relay that detects when the system freezes and shuts down the actuator. (I dont have the hardware for it)
+- Since i mostly focused on the logic I should make the design better. (mostly visually with the wires and maybe a dedicated spot for the lcd and sensors)
 ## Limitations
 ## How to run
 (Digital diagram of how the arduino is wired)
