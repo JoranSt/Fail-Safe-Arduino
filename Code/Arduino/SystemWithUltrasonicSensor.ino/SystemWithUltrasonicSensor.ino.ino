@@ -8,7 +8,9 @@ int ledPinGreen = 3;
 int buttonApin = 6;
 #define TRIG_PIN 12
 #define ECHO_PIN 11
-
+#define ENABLE 9
+#define DIRA 8
+#define DIRB 10
 
 enum SystemState {
   ARMING,
@@ -79,8 +81,9 @@ void setup() {
   pinMode(ledPinRed, OUTPUT);
   pinMode(ledPinGreen, OUTPUT);
   pinMode(buttonApin, INPUT_PULLUP);
-  // analogWrite(ledPinRed, redbrightness);
-  // analogWrite(ledPinGreen, greenbrightness);
+  pinMode(ENABLE, OUTPUT);
+  pinMode(DIRA, OUTPUT);
+  pinMode(DIRB, OUTPUT);
   startTime = millis();
 }
 
@@ -104,6 +107,7 @@ void loop() {
   }
   handleToggleButton();
   checkIdle();
+  checkFan();
   lastButtonState = buttonState;
 }
 void readAllSensors() {
@@ -111,6 +115,18 @@ void readAllSensors() {
 }
 void handleAllSensors() {
   handleUltrasonic(distance);
+}
+void checkFan(){
+  if(State == RUNNING){
+    digitalWrite(ENABLE,HIGH); // enable on
+    digitalWrite(DIRA,HIGH); //one way
+    return;
+  }
+  else if (State == WARNING){
+    return;
+  }
+  digitalWrite(ENABLE, LOW);
+  digitalWrite(DIRA, LOW);
 }
 void updateSystemState() {
   if (errors != ERROR_NONE) {
