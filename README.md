@@ -12,11 +12,13 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 - I learned the basics of fail‑safe behavior and how to make the system react safely when something goes wrong.
 - I learned why naming things logically is important for readability and maintenance
 - I learned how to design a system with future proof in mind. (Using bitflags and enums even though there werent that many variables. Good for if the system ever get expanded)
+- I learned why I should use #define for pin numbers.
 ---
 ## What I can do better (so far)
 - I can group the logic even more, it will make the code easier to read and follow. It will also make the code more clean.
 - I can structure the system from the start moduraly. That will safe headaches later when I need to refactor everything into modular logic.
-- I can do better cable management on the breadboard. this will make things easier to see if something needs troubleshooting, to be added or to be changed. 
+- I can do better cable management on the breadboard. this will make things easier to see if something needs troubleshooting, to be added or to be changed.
+- I should take into account the (potential) bounces from sensors (I have noticed this while testing).
 ---
 ## How it works
 ## Future improvements
