@@ -3,9 +3,9 @@
 #include <NewPing.h>
 //look into structs note for self
 //Pin numbers
-int ledPinRed = 5;
-int ledPinGreen = 3;
-int buttonApin = 6;
+#define ledPinRed  5
+#define ledPinGreen  3
+#define buttonApin 6
 #define TRIG_PIN 12
 #define ECHO_PIN 11
 #define ENABLE 9
@@ -116,13 +116,13 @@ void readAllSensors() {
 void handleAllSensors() {
   handleUltrasonic(distance);
 }
-void checkFan(){
-  if(State == RUNNING){
-    digitalWrite(ENABLE,HIGH); // enable on
-    digitalWrite(DIRA,HIGH); //one way
+void checkFan() {
+  if (State == RUNNING) {
+    digitalWrite(ENABLE, HIGH);
+    digitalWrite(DIRA, HIGH);
     return;
-  }
-  else if (State == WARNING){
+  } else if (State == WARNING) {
+    //returns the previous fanstate since you want to keep the fan spinning with a warning
     return;
   }
   digitalWrite(ENABLE, LOW);
@@ -136,7 +136,8 @@ void updateSystemState() {
   } else if (warnings != WARN_NONE) {
     State = WARNING;
     updateBlinkingAnimation(redbase, greenbase);
-  } else if (safeToStart && ledState == HIGH) {
+  }  // decides if the system is running or not by the ledstate used with the button
+  else if (safeToStart && ledState == HIGH) {
     State = RUNNING;
   } else if (safeToStart && ledState == LOW) {
     State = IDLE;
