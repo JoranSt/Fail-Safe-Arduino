@@ -1,0 +1,1 @@
+#python envirometn with pyserial (through conda) and pyqt5(through pip)
