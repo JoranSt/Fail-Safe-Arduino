@@ -1,0 +1,28 @@
+mode: simulation   # simulation | arduino | replay
+
+#groups for the simulation. If more is needed add it here
+groups:
+  - name: Distance Sensors
+    type: UltraSonicSensor
+    sensors:
+      - name: sensor 1
+        min: 0
+        max: 30
+        noise: 1
+        warning: 20
+        failrate: 0.01
+      - name: sensor 2
+        min: 0
+        max: 30
+        noise: 1
+        warning: 20
+        failrate: 0.01
+      - name: sensor 3
+        min: 0
+        max: 30
+        noise: 1
+        warning: 20
+        failrate: 0.01
+
+replay:
+  file: logs/run_001.jsonl
