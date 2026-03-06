@@ -2,6 +2,11 @@ from enum import Enum
 import random
 from collections import Counter
 import time
+import yaml
+
+
+with open("Code/Python/config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 
 class SensorState(Enum):
@@ -30,14 +35,14 @@ class SystemState(Enum):
 
 
 class Sensor:
-    def __init__(self, name, min_value, max_value, noise, warningvalue, failrate=0.0):
+    def __init__(self, name, config):
         self.name = name
-        self.min_value = min_value
-        self.max_value = max_value
-        self.noise = noise
-        self.failrate = failrate
+        self.min_value = config.get("min", 0)
+        self.max_value = config.get("max", 100)
+        self.noise = config.get("noise", 0.0)
+        self.warningvalue = config.get("warning", None)
+        self.failrate = config.get("failrate", 0.0)
         self.state = SensorState.OK
-        self.warningvalue = warningvalue
 
     def read(self):
         raise NotImplementedError("Must be defined in subclass")
@@ -47,9 +52,9 @@ class Sensor:
 
 
 class UltraSonicSensor(Sensor):
-    def __init__(self, name, min_value, max_value, noise, warningvalue, failrate=0.0):
-        super().__init__(name, min_value, max_value, noise, warningvalue, failrate)
-        self.currentValue = (min_value + max_value) / 2
+    def __init__(self, name, config):
+        super().__init__(name, config)
+        self.currentValue = (self.min_value + self.max_value) / 2
 
     def simulate(self):
         # simulates a change in the value
@@ -61,14 +66,19 @@ class UltraSonicSensor(Sensor):
             self.state = SensorState.FAILED
             return None
         # update sensor
+        if self.state == SensorState.FAILED:
+            return
         value = self.currentValue + random.uniform(-self.noise, self.noise)
         if value < self.min_value or value > self.max_value:
             self.state = SensorState.DANGER
-        elif self.warningvalue < value < self.max_value:
+        elif (
+            self.warningvalue is not None and self.warningvalue < value < self.max_value
+        ):
             self.state = SensorState.WARNING
+
         else:
             self.state = SensorState.OK
-
+        # do i need to return value?
         return value
 
 
@@ -95,12 +105,10 @@ class SensorGroup:
         states = [s.state for s in self.sensors]
         count = Counter(states)
 
-        if count[SensorState.DANGER] >= 2:
+        if count[SensorState.DANGER] + count[SensorState.FAILED] >= 2:
             self.state = SensorState.DANGER
         elif count[SensorState.WARNING] >= 2:
             self.state = SensorState.WARNING
-        elif count[SensorState.Failed] >= 2:
-            self.state = SensorState.FAILED
         else:
             self.state = SensorState.OK
 
@@ -138,12 +146,19 @@ class System:
 
 
 if __name__ == "__main__":
-    distance_group = SensorGroup("Distance Sensors")
-    distance_group.add_sensor(UltraSonicSensor("sensor1", 10, 30, 1, 20))
-    distance_group.add_sensor(UltraSonicSensor("sensor2", 10, 30, 1, 20))
-    distance_group.add_sensor(UltraSonicSensor("sensor3", 10, 30, 1, 20))
+    SENSOR_TYPES = {"UltraSonicSensor": UltraSonicSensor}
     system = System()
-    system.add_group(distance_group)
+    for group_cfg in config["groups"]:
+        group = SensorGroup(group_cfg["name"])
+        typesensor = SENSOR_TYPES[group_cfg["type"]]
+
+        for sensor_cfg in group_cfg["sensors"]:
+            name = sensor_cfg["name"]
+            sensor = typesensor(name, sensor_cfg)
+
+            group.add_sensor(sensor)
+
+        system.add_group(group)
     while True:
         system.simulate()
 
@@ -151,7 +166,7 @@ if __name__ == "__main__":
         for group in system.groups:
             print(f"  Group {group.name}: {group.state.label}")
             for sensor in group.sensors:
-                print(f"    {sensor.name}: {sensor.state.label}")
+                print(f"    {sensor.name}: {sensor.state.label}, {sensor.currentValue}")
 
         print("-" * 40)
         if system.state == SystemState.DANGER:

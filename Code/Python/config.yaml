@@ -10,13 +10,13 @@ groups:
         max: 30
         noise: 1
         warning: 20
-        failrate: 0.01
+        failrate: 0
       - name: sensor 2
         min: 0
         max: 30
         noise: 1
         warning: 20
-        failrate: 0.01
+        failrate: 0
       - name: sensor 3
         min: 0
         max: 30
