@@ -10,28 +10,30 @@ with open("Code/Python/config.yaml", "r") as f:
 
 
 class SensorState(Enum):
-    # gives the state + led color
-    OK = ("ok", "green")
-    WARNING = ("near danger", "orange")
-    DANGER = ("danger", "blinking red")
-    FAILED = ("failed", "red")
+    OK = ("ok", "green", False)
+    WARNING = ("near danger", "orange", True)
+    DANGER = ("danger", "red", True)
+    FAILED = ("failed", "red", True)
 
-    def __init__(self, label, color):
+    def __init__(self, label, color, blink):
         self.label = label
         self.color = color
+        self.blink = blink
 
 
 # need to think if i want arming in the simulation
 class SystemState(Enum):
-    RUNNING = ("running", "green")
-    WARNING = ("warning", "blinking orange")
-    DANGER = ("danger", "blinking red")
-    IDLE = ("idle", "red")
-    ARMING = ("arming", "blinking green")
+    RUNNING = ("running", "green", False)
+    WARNING = ("warning", "orange", True)
+    DANGER = ("danger", "red", True)
+    IDLE = ("idle", "red", False)
+    ARMING = ("arming", "green", True)
 
-    def __init__(self, label, color):
+    def __init__(self, label, color, blink):
         self.label = label
         self.color = color
+        self.blink = blink
+
 
 
 class Sensor:
@@ -43,6 +45,8 @@ class Sensor:
         self.warningvalue = config.get("warning", None)
         self.failrate = config.get("failrate", 0.0)
         self.state = SensorState.OK
+        self.history_x = []
+        self.history_y = []
 
     def read(self):
         raise NotImplementedError("Must be defined in subclass")
@@ -58,13 +62,15 @@ class UltraSonicSensor(Sensor):
 
     def simulate(self):
         # simulates a change in the value
-        self.currentValue += random.uniform(-0.5, 1)
+        if self.state == SensorState.FAILED:
+            return
+        self.currentValue += random.uniform(-0.05, 0.1)
 
     def read(self):
         # reads the sensor
-        if random.random() < 0.01:
+        if random.random() < self.failrate:
             self.state = SensorState.FAILED
-            return None
+            return
         # update sensor
         if self.state == SensorState.FAILED:
             return
@@ -88,6 +94,7 @@ class SensorGroup:
         self.name = name
         self.sensors = []
         self.state = SensorState.OK
+        self.plots = [] 
 
     def add_sensor(self, sensor):
         self.sensors.append(sensor)
@@ -117,6 +124,9 @@ class System:
     def __init__(self):
         self.groups = []
         self.state = SystemState.IDLE
+        self.start_time = time.time()
+        self.time = 0
+
 
     def add_group(self, group):
         self.groups.append(group)
@@ -134,7 +144,8 @@ class System:
     def update_state(self):
         # collect the groupstates
         group_states = [g.state for g in self.groups]
-
+        self.time = time.time() - self.start_time
+        
         if any(state == SensorState.DANGER for state in group_states):
             self.state = SystemState.DANGER
         elif any(state == SensorState.FAILED for state in group_states):
