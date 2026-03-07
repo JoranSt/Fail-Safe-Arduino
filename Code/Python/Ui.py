@@ -186,9 +186,10 @@ class MainWindow(QWidget):
         # blinking LED
         if state.blink:
             if self.blink_on:
-                self.info_state_icon.setPixmap(self.make_state_circle(state.color).pixmap(14, 14))
-            else:
                 self.info_state_icon.setPixmap(self.make_state_circle("transparent").pixmap(14, 14))
+                
+            else:
+                self.info_state_icon.setPixmap(self.make_state_circle(state.color).pixmap(14, 14))
             self.blink_on = not self.blink_on
         else:
             self.info_state_icon.setPixmap(self.make_state_circle(state.color).pixmap(14, 14))
@@ -212,8 +213,6 @@ class MainWindow(QWidget):
                 knop.setIcon(self.make_state_circle("transparent"))
         else:
             knop.setIcon(self.make_state_circle(color))
-    def toggle_blink(self):
-        self.blink_on = not self.blink_on
     # ----------------------------------------------------
     # UPDATE GRAPHS (NO BLINKING)
     # ----------------------------------------------------
