@@ -5,24 +5,15 @@ import numpy as np
 from PyQt6.QtGui import QPixmap, QPainter, QColor, QIcon
 import sys
 sys.path.append("Code/Python")
-from Simulation import *
+from sim2 import *
 import json
+import yaml
+with open("Code/Python/config.yaml", "r") as f:
+        config = yaml.safe_load(f)
 
 
-system = System()
-SENSOR_TYPES = {"UltraSonicSensor": UltraSonicSensor}
-system = System()
-for group_cfg in config["groups"]:
-    group = SensorGroup(group_cfg["name"])
-    typesensor = SENSOR_TYPES[group_cfg["type"]]
+system = System(config)
 
-    for sensor_cfg in group_cfg["sensors"]:
-        name = sensor_cfg["name"]
-        sensor = typesensor(name, sensor_cfg)
-
-        group.add_sensor(sensor)
-
-    system.add_group(group)
     
     
     
@@ -39,7 +30,8 @@ class MainWindow(QWidget):
         self.logging_active = True          
         self.logging_stopped = False        
         self.logged_data = []
-        self.log_filename = "logs/system_log.json"               
+        self.log_filename = "logs/system_log.json" 
+                      
 
         # ----------------------------------------------------
         # MAIN LAYOUT
@@ -194,7 +186,8 @@ class MainWindow(QWidget):
 
         state = self.system.state  
         # --- STOP LOGGING EN SCHRIJF JSON ---
-        if state == SystemState.DANGER and self.logging_active:
+        if state == SystemState.DANGER and self.logging_active and not system.mode == "replay":
+
             self.logging_active = False
             self.logging_stopped = True
             print("⚠️ Logging gestopt: systeem in DANGER")
@@ -265,12 +258,14 @@ class MainWindow(QWidget):
         if self.logging_active:
             entry = {
                 "time": self.system.time,
+                "system_state" : self.system.state.label,
                 "groups": []
             }
 
             for group in self.system.groups:
                 group_data = {
                     "group": group.name,
+                    "state" : group.state.label,
                     "sensors": []
                 }
 
