@@ -6,6 +6,7 @@ from PyQt6.QtGui import QPixmap, QPainter, QColor, QIcon
 import sys
 sys.path.append("Code/Python")
 from Simulation import *
+import json
 
 
 system = System()
@@ -35,6 +36,10 @@ class MainWindow(QWidget):
         self.stacked = QStackedWidget()
         self.sensorAmount = sum(len(group.sensors) for group in self.system.groups)
         self.blink_on = True
+        self.logging_active = True          
+        self.logging_stopped = False        
+        self.logged_data = []
+        self.log_filename = "logs/system_log.json"               
 
         # ----------------------------------------------------
         # MAIN LAYOUT
@@ -44,6 +49,9 @@ class MainWindow(QWidget):
         # ----------------------------------------------------
         # LEFT SIDE: GROUP PAGES WITH GRAPHS
         # ----------------------------------------------------
+        # ----------------------------------------------------
+# LEFT SIDE: GROUP PAGES WITH GRAPHS
+# ----------------------------------------------------
         self.group_pages = []  # store graph structures
 
         for group in self.system.groups:
@@ -76,19 +84,23 @@ class MainWindow(QWidget):
                 plot.setBackground("#1e1e1e")
                 plot.showGrid(x=True, y=True, alpha=0.3)
 
-                curve = plot.plot(pen=pg.mkPen("cyan", width=2))
+                curve = plot.plot(pen=pg.mkPen(sensor.state.color, width=2))
 
                 plots[sensor] = {
                     "curve": curve,
-                    "data": [],
+                    "x": [],       # tijdstempels
+                    "data": [],    # sensorwaarden
                     "led": led
                 }
 
                 page_layout.addWidget(plot)
 
             page_layout.addStretch()
+
+            # ⬅️ BELANGRIJK: deze drie regels BUITEN de sensor-loop
             self.group_pages.append(plots)
             self.stacked.addWidget(page)
+
 
         # ----------------------------------------------------
         # RIGHT SIDE: INFO PANEL + SIDEBAR
@@ -180,20 +192,32 @@ class MainWindow(QWidget):
         self.info_failed.setText(f"Failed sensors: {failures}")
         self.info_time.setText(f"Time: {mins:02d}:{secs:02d}")
 
-        state = self.system.state
+        state = self.system.state  
+        # --- STOP LOGGING EN SCHRIJF JSON ---
+        if state == SystemState.DANGER and self.logging_active:
+            self.logging_active = False
+            self.logging_stopped = True
+            print("⚠️ Logging gestopt: systeem in DANGER")
+
+            import json
+            with open(self.log_filename, "w") as f:
+                json.dump(self.logged_data, f, indent=4)
+
+            print(f"📁 Log opgeslagen naar {self.log_filename}")
+
         self.info_state_text.setText(f"State: {state.label}")
 
         # blinking LED
         if state.blink:
             if self.blink_on:
                 self.info_state_icon.setPixmap(self.make_state_circle("transparent").pixmap(14, 14))
-                
             else:
                 self.info_state_icon.setPixmap(self.make_state_circle(state.color).pixmap(14, 14))
             self.blink_on = not self.blink_on
         else:
             self.info_state_icon.setPixmap(self.make_state_circle(state.color).pixmap(14, 14))
-
+            
+            
     # ----------------------------------------------------
     # UPDATE GROUP ICONS IN SIDEBAR
     # ----------------------------------------------------
@@ -221,27 +245,44 @@ class MainWindow(QWidget):
             for sensor in group.sensors:
                 plot_info = plots[sensor]
 
-                # add new value
+                current_time = self.system.time
+
                 plot_info["data"].append(sensor.currentValue)
+                plot_info["x"].append(current_time)
+
                 if len(plot_info["data"]) > 200:
                     plot_info["data"].pop(0)
+                    plot_info["x"].pop(0)
 
-                # update curve (NO blinking)
+                plot_info["curve"].setPen(pg.mkPen(sensor.state.color, width=2))
+                plot_info["curve"].setData(plot_info["x"], plot_info["data"])
+
                 color = sensor.state.color
-                pen = pg.mkPen(color=color, width=2)
-                plot_info["curve"].setPen(pen)
-                plot_info["curve"].setData(plot_info["data"])
+                icon_color = color if not sensor.state.blink or self.blink_on else "transparent"
+                plot_info["led"].setPixmap(self.make_state_circle(icon_color).pixmap(14, 14))
 
-                # update LED above graph (blinks)
-                if sensor.state.blink:
-                    if self.blink_on:
-                        icon = self.make_state_circle(color)
-                    else:
-                        icon = self.make_state_circle("transparent")
-                else:
-                    icon = self.make_state_circle(color)
+        # --- LOGGING (1x per tick, NIET per sensor!) ---
+        if self.logging_active:
+            entry = {
+                "time": self.system.time,
+                "groups": []
+            }
 
-                plot_info["led"].setPixmap(icon.pixmap(14, 14))
+            for group in self.system.groups:
+                group_data = {
+                    "group": group.name,
+                    "sensors": []
+                }
+
+                for sensor in group.sensors:
+                    group_data["sensors"].append({
+                        "name": sensor.name,
+                        "value": sensor.currentValue,
+                        "state": sensor.state.label
+                    })
+
+                entry["groups"].append(group_data)
+            self.logged_data.append(entry)
 
     # ----------------------------------------------------
     # DRAW CIRCLE ICON
