@@ -1,6 +1,7 @@
-# Arduino Failsafe Shutdown System
-I'm developing a fail-safe Arduino system that monitors multiple sensors and controls an actuator (fan) based on state logic and interlocks. Each sensor will have an LED indicator, and a system-wide LED signals any fault. The project demonstrates (once finished) fail-safe design, modular control logic, and safety-first principles in embedded systems. Right now im focusing on adding more sensors and integrating everything together. Im planning on logging all the readings and making a model in python to simulate the logic. Flowcharts and diagrams will be added later.
----
+# Arduino based fail safe system
+The goal of this project was to teach myself safety logic using an arduino and sensors. I started with making a [LED blink](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/blinkingLed.ino/blinkingLed.ino.ino). After that i worked on the [startup](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/Startup.ino/Startup.ino.ino) with the LCD and made a start with the arming logic. After that I implemented the [automatic disarm logic](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/StartupWithAutomaticDisarm/StartupWithAutomaticDisarm.ino). What the automatic disarm does is it automatically disarms the system after its been idle for too long. This is implemented so the system can't be accidently turned on. Then I added an ultrasonic sensor and a fan as displayed [here](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/SystemWithUltrasonicSensor.ino/SystemWithUltrasonicSensor.ino.ino). I wanted to make the system bigger but I didn't have the necessary equipment. 
+
+Once I finished building the physical system I started building a [simulation](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Python/Simulation.py). The simulation was a great learning experience since I started thinking about how to make the simulation with objects in mind. I implemented 2 out of 3 voting and learned about sensor noise. I struggled a lot with the [ui](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Python/Ui.py) and integrating it with the simulation and the logging/replay feature. I display every group state at the same time and the system state. Every group has its own graphs from the sensor in that group. I made the ui future proof by making sure it automatically adds new sensors if sensors are added in the config file.
 
 ## What I learned (so far)
 ---
@@ -13,12 +14,15 @@ I'm developing a fail-safe Arduino system that monitors multiple sensors and con
 - I learned why naming things logically is important for readability and maintenance
 - I learned how to design a system with future proof in mind. (Using bitflags and enums even though there werent that many variables. Good for if the system ever get expanded)
 - I learned why I should use #define for pin numbers.
+- I learned how to make a config file and integrate it in a simulation
+- I learned the importance of majority voting in sensors
 ---
 ## What I can do better (so far)
 - I can group the logic even more, it will make the code easier to read and follow. It will also make the code more clean.
 - I can structure the system from the start moduraly. That will safe headaches later when I need to refactor everything into modular logic.
 - I can do better cable management on the breadboard. this will make things easier to see if something needs troubleshooting, to be added or to be changed.
 - I should take into account the (potential) bounces from sensors (I have noticed this while testing).
+- I should keep modular thinking in mind even when learning new things. I usually fall back to deepnesting when im learning.
 ---
 ## How it works
 ## Future improvements
