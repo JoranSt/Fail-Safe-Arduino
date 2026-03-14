@@ -4,7 +4,7 @@ from collections import Counter
 import time
 import yaml
 import json
-
+import serial
 
 # ---------------- ENUMS ---------------- #
 
@@ -50,17 +50,18 @@ class SystemState(Enum):
 # ---------------- SENSORS ---------------- #
 
 class Sensor:
-    def __init__(self, name, config):
+    def __init__(self, name, config, min_value=None, max_value = None):
         self.name = name
-        self.min_value = config.get("min", 0)
-        self.max_value = config.get("max", 100)
+        self.min_value = min_value if min_value is not None else config.get("min", 0)
+        self.max_value = max_value if max_value is not None else config.get("max", 100)
         self.noise = config.get("noise", 0.0)
         self.warningvalue = config.get("warning", None)
         self.failrate = config.get("failrate", 0.0)
         self.state = SensorState.OK
         self.history_x = []
         self.history_y = []
-        self.currentValue = 0  # altijd aanwezig, ook in replay
+    
+
 
     def read(self):
         raise NotImplementedError("Must be defined in subclass")
@@ -68,7 +69,30 @@ class Sensor:
     def simulate(self):
         raise NotImplementedError("Must be defined in subclass")
 
+class ArduinoSensor(Sensor):
+    def __init__(self, name, config, value, min_value=0, max_value=0,):
+        super().__init__(name, config, min_value, max_value)
+        self.currentValue = value
+        
+    def read(self):
+        if random.random() < self.failrate:
+            self.state = SensorState.FAILED
+            return
 
+        if self.state == SensorState.FAILED:
+            return
+        if  self.currentValue < float(self.max_value):
+            self.state = SensorState.DANGER
+        elif (
+            float(self.min_value) > self.currentValue > float(self.max_value)
+        ):
+            self.state = SensorState.WARNING
+        else:
+            self.state = SensorState.OK
+        return
+    def simulate(self):
+        pass
+    
 class UltraSonicSensor(Sensor):
     def __init__(self, name, config):
         super().__init__(name, config)
@@ -147,6 +171,7 @@ class System:
         self.state = SystemState.IDLE
         self.start_time = time.time()
         self.time = 0
+        self.buffer = ""
 
         self.SENSOR_TYPES = {
             "UltraSonicSensor": UltraSonicSensor
@@ -154,11 +179,11 @@ class System:
 
         if self.mode == "replay":
             self._load_replay_data()
+            
+        elif self.mode == "arduino":
+            self._connect_arduino()
         else:
             self._load_groups_from_config()
-
-        if self.mode == "arduino":
-            self._connect_arduino()
 
     # ---- config → groepen/sensoren (simulation/arduino) ---- #
 
@@ -206,15 +231,64 @@ class System:
             self.groups.append(group)
 
     # ---- arduino stub ---- #
-
+    def parse_line(self,line):
+            data = {}
+            
+            for part in line.strip().split(";"):
+                key, value = part.split("=")
+                data[key] = value
+            return data
+    
     def _connect_arduino(self):
-        # hier later je serial verbinding
-        pass
+        self.ser = serial.Serial(self.config["port"], self.config["baud"], timeout=1)
+        time.sleep(5)
+        self.ser.reset_input_buffer()
+        self.arduino_setup()
+        
+    def arduino_setup(self):
+        raw = self.ser.readline().decode().strip()
+        if not raw:
+            return  # lege regel
+        data = self.parse_line(raw)
 
-    def _simulate_arduino(self):
-        # hier later je arduino leeslogica
-        pass
+        if "GROUP" not in data:
+            return  # incomplete regel, skip
 
+        group = SensorGroup(data["GROUP"])
+        if(group not in self.groups):
+            s1 = float(data["S1"])
+            s2 = float(data["S2"])
+            s3 = float(data["S3"])
+            group.add_sensor(ArduinoSensor("S1", self.config, s1, data["Min"], data["Max"]))
+            group.add_sensor(ArduinoSensor("S2", self.config, s2, data["Min"], data["Max"]))
+            group.add_sensor(ArduinoSensor("S3", self.config, s3, data["Min"], data["Max"]))
+            self.groups.append(group)
+        print(self.groups)
+            
+    def read_arduino(self):
+        raw = self.ser.readline().decode(errors="ignore").strip()
+        if not raw:
+            return
+
+        data = self.parse_line(raw)
+        group_name = data["GROUP"]
+        group = next((g for g in self.groups if g.name == group_name), None)
+
+        # Update values from the objects
+        group.sensors[0].currentValue = float(data["S1"])
+        group.sensors[1].currentValue = float(data["S2"])
+        group.sensors[2].currentValue = float(data["S3"])
+        for i, key in enumerate(["S1", "S2", "S3"]):
+            if key in data:
+                value = float(data[key])
+                sensor = group.sensors[i]
+
+               
+
+                sensor.currentValue = value
+        # update de group
+        group.read_all()
+        
     # ---- main simulate ---- #
 
     def simulate(self):
@@ -237,28 +311,30 @@ class System:
 
     def _simulate_live(self):
         self.time = time.time() - self.start_time
-
+    def _simulate_arduino(self):
+        self.time = time.time() - self.start_time
+        self.read_arduino()
     def _simulate_replay(self):
         if self.replay_index >= len(self.replay_log):
             return
 
         entry = self.replay_log[self.replay_index]
 
-        # tijd uit log
+        
         log_time = entry["time"]
 
-        # eerste frame → direct tonen
+        # first frame that displays directly
         if self.replay_index == 0:
             self.replay_start = time.time()
             self.log_start = log_time
         else:
-            # hoeveel tijd zou er moeten zijn verstreken?
+            # time for plotting
             elapsed_log = log_time - self.log_start
             elapsed_real = time.time() - self.replay_start
 
-            # als we te snel zijn → wachten
+            # wait if its too fast
             if elapsed_real < elapsed_log:
-                return  # nog niet updaten
+                return 
         self.time = log_time
         self.state = SystemState.from_label(entry["system_state"])
 
@@ -274,7 +350,7 @@ class System:
 
     def update_state(self):
         if self.mode == "replay":
-            # in replay komt state uit log, niet herberekenen
+            # in replay the state comes from the log
             return
 
         group_states = [g.state for g in self.groups]

@@ -1,5 +1,7 @@
-mode: replay  # simulation | arduino | replay
+mode: arduino  # simulation | arduino | replay
 
+baud: 115200
+port: "COM4"
 #groups for the simulation. If more is needed add it here
 groups:
   - name: Distance Sensors

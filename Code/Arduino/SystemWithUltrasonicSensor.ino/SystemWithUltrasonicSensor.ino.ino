@@ -73,7 +73,7 @@ double unsafeDistance = 10;
 
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
@@ -98,17 +98,19 @@ void loop() {
     displayMessage("Ready to arm", 0, 0);
     readyToArm = true;
   }
-  if (millis() - readSensor >= 10) {
+  if (millis() - readSensor >= 50) {
     readAllSensors();
     handleAllSensors();
     updateSystemState();
     updateLCD();
     readSensor = millis();
+    passSensorValues();
   }
   handleToggleButton();
   checkIdle();
   checkFan();
   lastButtonState = buttonState;
+
 }
 void readAllSensors() {
   distance = readUltraSonic();
@@ -260,6 +262,21 @@ void showWarningMessages() {
 void displayMessage(String message, int col, int row) {
   lcd.setCursor(col, row);
   lcd.print(message);
+}
+void passSensorValues(){
+  Serial.print("GROUP=A;");
+  Serial.print("S1=");
+  Serial.print(distance);
+  Serial.print(";S2=");
+  Serial.print(distance+1);
+  Serial.print(";S3=");
+  Serial.print(distance-1);
+  Serial.print(";Min=");
+  Serial.print(safetyDistance);
+  Serial.print(";Max=");
+  Serial.print(unsafeDistance);
+  Serial.println();
+
 }
 bool timePassed(unsigned long startTime, unsigned long interval) {
   return millis() - startTime >= interval;

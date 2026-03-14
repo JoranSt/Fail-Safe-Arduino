@@ -5,7 +5,7 @@ import numpy as np
 from PyQt6.QtGui import QPixmap, QPainter, QColor, QIcon
 import sys
 sys.path.append("Code/Python")
-from sim2 import *
+from Simulation import *
 import json
 import yaml
 with open("Code/Python/config.yaml", "r") as f:
@@ -235,6 +235,7 @@ class MainWindow(QWidget):
     # ----------------------------------------------------
     def update_graphs(self):
         for group, plots in zip(self.system.groups, self.group_pages):
+            
             for sensor in group.sensors:
                 plot_info = plots[sensor]
 
