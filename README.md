@@ -38,5 +38,6 @@ The sensor value is passed to a python script that displays the sensor values to
 - Multiple sensors for the same thing. It is safer and can handle sensor failure
 - Adding specific noise values to the sensors with their own algorithms
 - Making the code cleaner.
+- Calibrating the sensors.
 ## Limitations
 
