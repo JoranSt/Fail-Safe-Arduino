@@ -39,5 +39,6 @@ The sensor value is passed to a python script that displays the sensor values to
 - Adding specific noise values to the sensors with their own algorithms
 - Making the code cleaner.
 - Calibrating the sensors.
+- With the logging log only the last minute.
 ## Limitations
 
