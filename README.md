@@ -2,6 +2,7 @@
 The goal of this project was to teach myself safety logic using an arduino and sensors. I started with making a [LED blink](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/blinkingLed.ino/blinkingLed.ino.ino). After that i worked on the [startup](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/Startup.ino/Startup.ino.ino) with the LCD and made a start with the arming logic. After that I implemented the [automatic disarm logic](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/StartupWithAutomaticDisarm/StartupWithAutomaticDisarm.ino). What the automatic disarm does is it automatically disarms the system after its been idle for too long. This is implemented so the system can't be accidently turned on. Then I added an ultrasonic sensor and a fan as displayed [here](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Arduino/SystemWithUltrasonicSensor.ino/SystemWithUltrasonicSensor.ino.ino). I wanted to make the system bigger but I didn't have the necessary equipment. 
 
 Once I finished building the physical system I started building a [simulation](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Python/Simulation.py). The simulation was a great learning experience since I started thinking about how to make the simulation with objects in mind. I implemented 2 out of 3 voting and learned about sensor noise. I struggled a lot with the [ui](https://github.com/JoranSt/Fail-Safe-Arduino/blob/main/Code/Python/Ui.py) and integrating it with the simulation and the logging/replay feature. I display every group state at the same time and the system state. Every group has its own graphs from the sensor in that group. I made the ui future proof by making sure it automatically adds new sensors if sensors are added in the config file.
+
 ## How it works
 I have made the system with the current hardware avalaible. As mentioned above I started with the LED en arming state. To arm the system you need to hold the button for 2 seconds, after arming the system goes into idle mode. When the system is in idle mode you have 5 seconds (or another time depending on the preferences) to turn the system on.  If this does not happen the system goes back in arming state. As expected the sensors need to not be givin a dangerous value otherwise the system state is danger. To check the states I have used an ultrasonicsensor that measures at a frequency of 20 Hz. When the system is in danger and the sensors go back to being safe the system goes into arming mode with a message "arm the system if safe". The LED also represents the system state. When the system is on, the fan spins. 
 
@@ -22,7 +23,7 @@ The sensor value is passed to a python script that displays the sensor values to
 - I learned how to make a config file and integrate it in a simulation
 - I learned the importance of majority voting in sensors
 - I learned that the importance of the reading of the serial data and the displaying (I have not found a solution for this as of now)
-- 
+-  
 ## What I can do better (so far)
 - I can group the logic even more, it will make the code easier to read and follow. It will also make the code more clean.
 - I can structure the system from the start moduraly. That will safe headaches later when I need to refactor everything into modular logic.
@@ -31,6 +32,7 @@ The sensor value is passed to a python script that displays the sensor values to
 - I should keep modular thinking in mind even when learning new things. I usually fall back to deepnesting when im learning.
 - I should synchronize the reading and the displaying of data
 - I should be less reliant on AI. I have used it for the structure but also for debugging. I should learn to debug myself.
+- I found an issue with the blinking, the red blinking is slower than the green. I think it might have to do with the writing to the pins because the entire program runs slower when the red blinks. I have changed the red and green pin around to test and the issue transfered to green. I have not solved this.
 
 ## Future improvements
 - Adding a relay that detects when the system freezes and shuts down the actuator. (I dont have the hardware for it)
@@ -40,5 +42,6 @@ The sensor value is passed to a python script that displays the sensor values to
 - Making the code cleaner.
 - Calibrating the sensors.
 - With the logging log only the last minute.
+- 
 ## Limitations
 
